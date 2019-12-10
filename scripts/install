@@ -1,0 +1,175 @@
+#!/bin/bash
+
+#=================================================
+# GENERIC START
+#=================================================
+# IMPORT GENERIC HELPERS
+#=================================================
+
+source _common.sh
+source /usr/share/yunohost/helpers
+
+#=================================================
+# MANAGE SCRIPT FAILURE
+#=================================================
+
+ynh_clean_setup () {
+	### Remove this function if there's nothing to clean before calling the remove script.
+	true
+}
+# Exit if an error occurs during the execution of the script
+ynh_abort_if_errors
+
+#=================================================
+# RETRIEVE ARGUMENTS FROM THE MANIFEST
+#=================================================
+
+domain=$YNH_APP_ARG_DOMAIN
+path_url=$YNH_APP_ARG_PATH
+datadir=$YNH_APP_ARG_DATADIR
+app=$YNH_APP_INSTANCE_NAME
+
+#=================================================
+# CHECK IF THE APP CAN BE INSTALLED WITH THESE ARGS
+#=================================================
+ynh_script_progression --message="Validating installation parameters..." --time --weight=1
+
+final_path=/opt/yunohost/$app
+test ! -e "$final_path" || ynh_die --message="The installation path $final_path already contains a folder"
+
+# Add the path in the configuration file
+if [ "$datadir" != "/" ]; then
+	datadir_final="$datadir/data"
+else
+	datadir_final="/opt/data/$app"
+fi
+test ! -e "$datadir_final" || ynh_die --message="The data directory path $datadir_final already contains a folder"
+
+# Register (book) web path
+ynh_webpath_register --app=$app --domain=$domain --path_url=$path_url
+
+#=================================================
+# STORE SETTINGS FROM MANIFEST
+#=================================================
+ynh_script_progression --message="Storing installation settings..." --time --weight=1
+
+ynh_app_setting_set --app=$app --key=domain --value=$domain
+ynh_app_setting_set --app=$app --key=path --value=$path_url
+ynh_app_setting_set --app=$app --key=datadir --value=$datadir
+ynh_app_setting_set --app=$app --key=datadir_final --value=$datadir_final
+ynh_app_setting_set --app=$app --key=final_path --value=$final_path
+
+#=================================================
+# STANDARD MODIFICATIONS
+#=================================================
+# FIND AND OPEN A PORT
+#=================================================
+ynh_script_progression --message="Configuring firewall..." --time --weight=1
+
+#TODO test if it's work if the port is modified in the ServiceConfig.json
+# Test 9117 port (only compatible port)
+port=$(ynh_find_port 9117)
+if [ $port -gt 9117 ]
+then
+	ynh_die "The port 9117 is already in use. Jackett can't works on another port. Please try to free one of this ports."
+fi
+ynh_exec_warn_less yunohost firewall allow --no-upnp TCP $port
+ynh_app_setting_set --app=$app --key=port --value=$port
+
+#=================================================
+# INSTALL DEPENDENCIES
+#=================================================
+ynh_script_progression --message="Installing dependencies..." --time --weight=5
+
+ynh_install_app_dependencies $pkg_dependencies
+
+#=================================================
+# DOWNLOAD, CHECK AND UNPACK SOURCE
+#=================================================
+ynh_script_progression --message="Setting up source files..." --time --weight=1
+
+ynh_app_setting_set --app=$app --key=final_path --value=$final_path
+ynh_setup_source --dest_dir="$final_path"
+
+#=================================================
+# NGINX CONFIGURATION
+#=================================================
+ynh_script_progression --message="Configuring nginx web server..." --time --weight=1
+
+ynh_add_nginx_config
+
+#=================================================
+# CREATE DEDICATED USER
+#=================================================
+ynh_script_progression --message="Configuring system user..." --time --weight=1
+
+ynh_system_user_create --username=$app
+
+#=================================================
+# SPECIFIC SETUP
+#=================================================
+# CREATE THE CONFIG DIRECTORY & FILE
+#=================================================
+ynh_script_progression --message="Creation of the configuration directory..." --time --weight=1
+
+# Add the path in the configuration file
+ynh_replace_string --match_string="__PATH__" --replace_string="/$app" --target_file="../conf/ServerConfig.json"
+# Create the directories and copy the configuration file
+mkdir -p "$datadir_final"
+cp ../conf/config.xml "$datadir_final"
+
+#=================================================
+# SETUP SYSTEMD
+#=================================================
+ynh_script_progression --message="Configuring a systemd service..." --time --weight=1
+
+# Create the directories for the logs
+mkdir -p "/var/log/$app"
+
+# Set the datadir on startup
+ynh_replace_string --match_string="__DATADIR__" --replace_string="$datadir_final" --target_file="../conf/systemd.service"
+ynh_add_systemd_config
+
+#=================================================
+# GENERIC FINALIZATION
+#=================================================
+# SECURE FILES AND DIRECTORIES
+#=================================================
+ynh_script_progression --message="Set the permissions..." --time --weight=1
+
+# Set permissions to app files
+setup_permissions
+
+#=================================================
+# SETUP LOGROTATE
+#=================================================
+ynh_script_progression --message="Configuring log rotation..." --time --weight=1
+
+ynh_use_logrotate --logfile "/var/log/$app/$app.log"
+
+#=================================================
+# ADVERTISE SERVICE IN ADMIN PANEL
+#=================================================
+ynh_script_progression --message="Advertise service in admin panel..." --time --weight=1
+
+yunohost service add $app --log "/var/log/$app/$app.log"
+yunohost service add $app --description "$app daemon" --log "/var/log/$app/$app.log"
+
+#=================================================
+# START SYSTEMD SERVICE
+#=================================================
+ynh_script_progression --message="Starting a systemd service..." --time --weight=1
+
+ynh_systemd_action --service_name=$app --action="start" --log_path="/var/log/$app/$app.log"
+
+#=================================================
+# RELOAD NGINX
+#=================================================
+ynh_script_progression --message="Reloading nginx web server..." --time --weight=1
+
+ynh_systemd_action --service_name=nginx --action=reload
+
+#=================================================
+# END OF SCRIPT
+#=================================================
+ynh_script_progression --message="Installation of $app completed" --time --last

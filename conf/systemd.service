@@ -1,0 +1,20 @@
+[Unit]
+Description=Jackett Daemon
+After=network.target
+
+[Service]
+Type=simple
+User=__APP__
+Group=__APP__
+WorkingDirectory=__FINALPATH__/
+ExecStart=/usr/bin/mono --debug __FINALPATH__/JackettConsole.exe --NoRestart >> /var/log/__APP__/__APP__.log 2>&1
+TimeoutStopSec=20
+KillMode=process
+Restart=on-failure
+SyslogIdentifier=jackett
+Environment=XDG_CONFIG_HOME=__DATADIR__
+
+[Install]
+WantedBy=multi-user.target
+
+#https://github.com/Jackett/Jackett/wiki/systemd-service

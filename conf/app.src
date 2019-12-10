@@ -1,0 +1,6 @@
+SOURCE_URL=https://github.com/Jackett/Jackett/releases/download/v0.12.1115/Jackett.Binaries.Mono.tar.gz
+SOURCE_SUM=f0e3d0a999008dbbe8f853998ca5bdc250073727b59bc3d42d94f6f29b8fd631
+SOURCE_SUM_PRG=sha256sum
+SOURCE_FORMAT=tar.gz
+SOURCE_IN_SUBDIR=true
+SOURCE_FILENAME=
