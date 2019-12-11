@@ -106,6 +106,12 @@ ynh_script_progression --message="Removing the dedicated system user..." --time 
 ynh_system_user_delete --username=$app
 
 #=================================================
+# REMOVE DATA DIRECTORY
+#=================================================
+
+ynh_secure_remove --file="$datadir_final"
+
+#=================================================
 # END OF SCRIPT
 #=================================================
 
