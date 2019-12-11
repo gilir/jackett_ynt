@@ -115,8 +115,8 @@ ynh_script_progression --message="Creation of the configuration directory..." --
 # Add the path in the configuration file
 ynh_replace_string --match_string="__PATH__" --replace_string="/$app" --target_file="../conf/ServerConfig.json"
 # Create the directories and copy the configuration file
-mkdir -p "$datadir_final"
-cp ../conf/ServerConfig.json "$datadir_final"
+mkdir -p "$datadir_final/Jackett"
+cp ../conf/ServerConfig.json "$datadir_final/Jackett"
 
 #=================================================
 # SETUP SYSTEMD
