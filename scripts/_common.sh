@@ -73,26 +73,30 @@ ynh_setup_source_multiarch () {
 	esac
 
     if [ -z "$src_url" ]; then
-        local src_url=$(grep "SOURCE_URL_$arch=" "$src_file_path" | cut -d= -f2-)
+        src_url=$(grep "SOURCE_URL_$arch=" "$src_file_path" | cut -d= -f2-)
     fi
     if [ -z "$src_sum" ]; then
-        local src_sum=$(grep "SOURCE_SUM_$arch=" "$src_file_path" | cut -d= -f2-)
+        src_sum=$(grep "SOURCE_SUM_$arch=" "$src_file_path" | cut -d= -f2-)
     fi
     if [ -z "$src_sumprg" ]; then
-        local src_sumprg=$(grep "SOURCE_SUM_PRG_$arch=" "$src_file_path" | cut -d= -f2-)
+        src_sumprg=$(grep "SOURCE_SUM_PRG_$arch=" "$src_file_path" | cut -d= -f2-)
     fi
     if [ -z "$src_format" ]; then
-        local src_format=$(grep "SOURCE_FORMAT_$arch=" "$src_file_path" | cut -d= -f2-)
+        src_format=$(grep "SOURCE_FORMAT_$arch=" "$src_file_path" | cut -d= -f2-)
     fi
     if [ -z "$src_extract" ]; then
-        local src_extract=$(grep "SOURCE_EXTRACT_$arch=" "$src_file_path" | cut -d= -f2-)
+        src_extract=$(grep "SOURCE_EXTRACT_$arch=" "$src_file_path" | cut -d= -f2-)
     fi
     if [ -z "$src_in_subdir" ]; then
-        local src_in_subdir=$(grep "SOURCE_IN_SUBDIR_$arch=" "$src_file_path" | cut -d= -f2-)
+        src_in_subdir=$(grep "SOURCE_IN_SUBDIR_$arch=" "$src_file_path" | cut -d= -f2-)
     fi
     if [ -z "$src_filename" ]; then
-        local src_filename=$(grep "SOURCE_FILENAME_$arch=" "$src_file_path" | cut -d= -f2-)
+        src_filename=$(grep "SOURCE_FILENAME_$arch=" "$src_file_path" | cut -d= -f2-)
     fi
+
+    echo "src_url $src_url"
+    echo "src_sum $src_sum"
+    echo "src_sumprg $src_sumprg"
 
     # Default value
     src_sumprg=${src_sumprg:-sha256sum}
